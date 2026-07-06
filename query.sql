@@ -21,6 +21,10 @@
 --     (ex.: '2021-07-19'), diferente de csd.workbank.proposta (que é
 --     'dd/MM/yyyy HH:mm:ss'). Por isso cada lado usa sua própria
 --     máscara no TO_DATE.
+--   - csd.python.qlik usa o texto literal '*NÃO PREENCHIDO*' como
+--     placeholder de campo vazio em id_proposta/id_banco/
+--     qtd_parcelas, o que quebra o CAST AS INTEGER. Por isso essas
+--     linhas são excluídas antes de castar.
 -- ============================================================
 CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
@@ -30,7 +34,10 @@ SELECT
     CAST(lf.qtd_parcelas AS INTEGER)                                   AS prazo,
     CAST(lf.id_banco AS INTEGER)                                       AS banco
 FROM csd.python.qlik AS lf
-WHERE CAST(lf.id_banco AS INTEGER) = 129
+WHERE lf.id_proposta <> '*NÃO PREENCHIDO*'
+    AND lf.id_banco <> '*NÃO PREENCHIDO*'
+    AND lf.qtd_parcelas <> '*NÃO PREENCHIDO*'
+    AND CAST(lf.id_banco AS INTEGER) = 129
     AND CAST(lf.qtd_parcelas AS INTEGER) IN (84, 96, 108)
 
 UNION ALL
@@ -47,6 +54,7 @@ WHERE p.id_banco = 129
     AND NOT EXISTS (
         SELECT 1
         FROM csd.python.qlik AS lf2
-        WHERE CAST(lf2.id_proposta AS INTEGER) = p.id_proposta
+        WHERE lf2.id_proposta <> '*NÃO PREENCHIDO*'
+            AND CAST(lf2.id_proposta AS INTEGER) = p.id_proposta
             AND TO_DATE(lf2.dat_crc, 'yyyy-MM-dd') >= DATE '2025-01-01'
     );
