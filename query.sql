@@ -67,13 +67,14 @@ WHERE EXTRACT(YEAR FROM p.dat_crc) >= 2023
 -- Ajuste/complete o CASE abaixo com os demais bancos conforme a
 -- lista de bancos usada em qlik_tmp.
 --
--- O formato de `mes` abaixo assume 'MM/YYYY'. Se qlik_tmp usar
--- outro formato (ex.: 'YYYYMM'), troque a máscara do TO_CHAR.
+-- qlik_tmp.mes já é DATE (primeiro dia do mês), então o lado do
+-- legado trunca `Data Liberação Crédito` para o primeiro dia do
+-- mês, mantendo os dois lados como DATE.
 -- ============================================================
 CREATE OR REPLACE VIEW dfs.work.qlik_producao_consolidada AS
 SELECT
     CAST(l.`ID Proposta` AS VARCHAR)           AS proposta,
-    TO_CHAR(l.`Data Liberação Crédito`, 'MM/YYYY') AS mes,
+    DATE_TRUNC('MONTH', l.`Data Liberação Crédito`) AS mes,
     l.`Nome Produto`                           AS tabela,
     l.id_banco                                 AS banco,
     l.qtd_parcelas                             AS prazo
