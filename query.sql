@@ -6,17 +6,16 @@
 --
 -- Filtro:
 --   - banco = C6 (id_banco = 129)
---   - dat_crc a partir de 2025-01-01
---   - exclui propostas que já pertencem ao legado (id_proposta
---     presente em dfs.lais.legado_filtro), para não duplicar com
---     a view dfs.work.qlik_legado_NOVO.
+--   - qtd_parcelas apenas 84, 96 ou 108
+--   - exclui propostas que já pertencem ao legado a partir de
+--     2025-01-01 (id_proposta presente em dfs.lais.legado_filtro
+--     com dat_crc >= 2025-01-01), para não duplicar com a view
+--     dfs.work.qlik_legado_NOVO.
 --
--- dat_crc é TEXT em csd.workbank.proposta. O filtro de data abaixo
--- assume que os valores estão em formato ISO 'YYYY-MM-DD' (comparação
--- de texto funciona como comparação de data nesse formato). Se o
--- formato for outro, me avise para eu ajustar.
---
--- Filtra também qtd_parcelas apenas para os prazos 84, 96 ou 108.
+-- dat_crc é TEXT em csd.workbank.proposta e DATE em
+-- dfs.lais.legado_filtro. O filtro de data abaixo assume que o
+-- texto está em formato ISO 'YYYY-MM-DD'. Se o formato for outro,
+-- me avise para eu ajustar.
 --
 -- Colunas:
 --   proposta = id_proposta
@@ -34,10 +33,10 @@ SELECT
     p.id_banco                                     AS banco
 FROM csd.workbank.proposta AS p
 WHERE p.id_banco = 129
-    AND p.dat_crc >= '2025-01-01'
     AND p.qtd_parcelas IN (84, 96, 108)
     AND NOT EXISTS (
         SELECT 1
         FROM dfs.lais.legado_filtro AS lf
         WHERE lf.id_proposta = p.id_proposta
+            AND lf.dat_crc >= '2025-01-01'
     );
