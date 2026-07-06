@@ -12,11 +12,10 @@
 --     com dat_crc >= 2025-01-01), para não duplicar com a view
 --     dfs.work.qlik_legado_NOVO.
 --
--- dat_crc é TEXT em csd.workbank.proposta, no formato 'DD-MM-YYYY'
--- (ex.: '06-07-2026'), e DATE em dfs.lais.legado_filtro. Por isso o
--- parse abaixo usa TO_DATE com máscara explícita 'dd-MM-yyyy' em
--- vez de CAST direto. Se o formato real for outro (ex.: com "/" ao
--- invés de "-"), me avise para eu ajustar a máscara.
+-- dat_crc é TEXT em csd.workbank.proposta, no formato
+-- 'DD/MM/YYYY HH:MM:SS' (ex.: '30/06/2026 00:00:00'), e DATE em
+-- dfs.lais.legado_filtro. Por isso o parse abaixo usa TO_DATE com
+-- máscara explícita 'dd/MM/yyyy HH:mm:ss'.
 --
 -- Colunas:
 --   proposta = id_proposta
@@ -27,11 +26,11 @@
 -- ============================================================
 CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
-    p.id_proposta                                          AS proposta,
-    TO_CHAR(TO_DATE(p.dat_crc, 'dd-MM-yyyy'), 'MM/YYYY')   AS mes,
-    p.nome_produto                                         AS tabela,
-    p.qtd_parcelas                                         AS prazo,
-    p.id_banco                                             AS banco
+    p.id_proposta                                                    AS proposta,
+    TO_CHAR(TO_DATE(p.dat_crc, 'dd/MM/yyyy HH:mm:ss'), 'MM/YYYY')    AS mes,
+    p.nome_produto                                                   AS tabela,
+    p.qtd_parcelas                                                   AS prazo,
+    p.id_banco                                                       AS banco
 FROM csd.workbank.proposta AS p
 WHERE p.id_banco = 129
     AND p.qtd_parcelas IN (84, 96, 108)
