@@ -6,9 +6,15 @@
 --
 -- Filtro:
 --   - banco = C6 (id_banco = 129)
+--   - dat_crc a partir de 2025-01-01
 --   - exclui propostas que já pertencem ao legado (id_proposta
 --     presente em dfs.lais.legado_filtro), para não duplicar com
 --     a view dfs.work.qlik_legado_NOVO.
+--
+-- dat_crc é TEXT em csd.workbank.proposta. O filtro de data abaixo
+-- assume que os valores estão em formato ISO 'YYYY-MM-DD' (comparação
+-- de texto funciona como comparação de data nesse formato). Se o
+-- formato for outro, me avise para eu ajustar.
 --
 -- Colunas:
 --   proposta = id_proposta
@@ -26,6 +32,7 @@ SELECT
     p.id_banco      AS banco
 FROM csd.workbank.proposta AS p
 WHERE p.id_banco = 129
+    AND p.dat_crc >= '2025-01-01'
     AND NOT EXISTS (
         SELECT 1
         FROM dfs.lais.legado_filtro AS lf
