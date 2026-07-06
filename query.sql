@@ -22,10 +22,13 @@
 --     'dd/MM/yyyy HH:mm:ss'). Por isso cada lado usa sua própria
 --     máscara no TO_DATE.
 --   - csd.python.qlik tem lixo textual em campos vazios/errados
---     (ex.: '*NÃO PREENCHIDO*', 'NULL' como string literal), o que
---     quebra o CAST AS INTEGER. Em vez de excluir string por string,
---     o filtro abaixo só aceita valores puramente numéricos
---     (SIMILAR TO '[0-9]+') antes de castar.
+--     (ex.: '*NÃO PREENCHIDO*', 'NULL' como string literal). Além
+--     disso, por vir de exportação Python, números às vezes chegam
+--     como '129.0'/'84.0' (float stringificado) ou com espaços em
+--     branco em volta. Por isso: (1) usa-se TRIM antes de validar,
+--     (2) o padrão aceita um '.0' opcional, e (3) o CAST vai para
+--     FLOAT antes de virar INTEGER (CAST direto de '129.0' para
+--     INTEGER falha).
 --   - dat_crc recebe proteção parecida, mas comparando só os 10
 --     primeiros caracteres (SUBSTR(dat_crc, 1, 10)) contra o padrão
 --     'yyyy-MM-dd'. Isso evita rejeitar linhas cujo dat_crc venha
@@ -34,18 +37,18 @@
 -- ============================================================
 CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
-    CAST(lf.id_proposta AS INTEGER)                                        AS proposta,
-    TO_CHAR(TO_DATE(SUBSTR(lf.dat_crc, 1, 10), 'yyyy-MM-dd'), 'MM/YYYY')  AS mes,
-    lf.nome_produto                                                        AS tabela,
-    CAST(lf.qtd_parcelas AS INTEGER)                                       AS prazo,
-    CAST(lf.id_banco AS INTEGER)                                           AS banco
+    CAST(CAST(TRIM(lf.id_proposta) AS FLOAT) AS INTEGER)                     AS proposta,
+    TO_CHAR(TO_DATE(SUBSTR(lf.dat_crc, 1, 10), 'yyyy-MM-dd'), 'MM/YYYY')    AS mes,
+    lf.nome_produto                                                          AS tabela,
+    CAST(CAST(TRIM(lf.qtd_parcelas) AS FLOAT) AS INTEGER)                    AS prazo,
+    CAST(CAST(TRIM(lf.id_banco) AS FLOAT) AS INTEGER)                        AS banco
 FROM csd.python.qlik AS lf
-WHERE lf.id_proposta SIMILAR TO '[0-9]+'
-    AND lf.id_banco SIMILAR TO '[0-9]+'
-    AND lf.qtd_parcelas SIMILAR TO '[0-9]+'
+WHERE TRIM(lf.id_proposta) SIMILAR TO '[0-9]+(\.[0-9]+)?'
+    AND TRIM(lf.id_banco) SIMILAR TO '[0-9]+(\.[0-9]+)?'
+    AND TRIM(lf.qtd_parcelas) SIMILAR TO '[0-9]+(\.[0-9]+)?'
     AND SUBSTR(lf.dat_crc, 1, 10) SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
-    AND CAST(lf.id_banco AS INTEGER) = 129
-    AND CAST(lf.qtd_parcelas AS INTEGER) IN (84, 96, 108)
+    AND CAST(CAST(TRIM(lf.id_banco) AS FLOAT) AS INTEGER) = 129
+    AND CAST(CAST(TRIM(lf.qtd_parcelas) AS FLOAT) AS INTEGER) IN (84, 96, 108)
 
 UNION ALL
 
@@ -61,8 +64,8 @@ WHERE p.id_banco = 129
     AND NOT EXISTS (
         SELECT 1
         FROM csd.python.qlik AS lf2
-        WHERE lf2.id_proposta SIMILAR TO '[0-9]+'
+        WHERE TRIM(lf2.id_proposta) SIMILAR TO '[0-9]+(\.[0-9]+)?'
             AND SUBSTR(lf2.dat_crc, 1, 10) SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
-            AND CAST(lf2.id_proposta AS INTEGER) = p.id_proposta
+            AND CAST(CAST(TRIM(lf2.id_proposta) AS FLOAT) AS INTEGER) = p.id_proposta
             AND TO_DATE(SUBSTR(lf2.dat_crc, 1, 10), 'yyyy-MM-dd') >= DATE '2025-01-01'
     );
