@@ -26,23 +26,24 @@
 --     quebra o CAST AS INTEGER. Em vez de excluir string por string,
 --     o filtro abaixo só aceita valores puramente numéricos
 --     (SIMILAR TO '[0-9]+') antes de castar.
---   - dat_crc recebe a mesma proteção: só segue pro TO_DATE se
---     bater com o padrão 'yyyy-MM-dd' (SIMILAR TO
---     '[0-9]{4}-[0-9]{2}-[0-9]{2}'), evitando erro de parsing em
---     linhas com data ausente/mal preenchida.
+--   - dat_crc recebe proteção parecida, mas comparando só os 10
+--     primeiros caracteres (SUBSTR(dat_crc, 1, 10)) contra o padrão
+--     'yyyy-MM-dd'. Isso evita rejeitar linhas cujo dat_crc venha
+--     com horário junto (ex.: '2021-07-19 00:00:00'), que um SIMILAR
+--     TO exato excluiria indevidamente.
 -- ============================================================
 CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
-    CAST(lf.id_proposta AS INTEGER)                                    AS proposta,
-    TO_CHAR(TO_DATE(lf.dat_crc, 'yyyy-MM-dd'), 'MM/YYYY')              AS mes,
-    lf.nome_produto                                                    AS tabela,
-    CAST(lf.qtd_parcelas AS INTEGER)                                   AS prazo,
-    CAST(lf.id_banco AS INTEGER)                                       AS banco
+    CAST(lf.id_proposta AS INTEGER)                                        AS proposta,
+    TO_CHAR(TO_DATE(SUBSTR(lf.dat_crc, 1, 10), 'yyyy-MM-dd'), 'MM/YYYY')  AS mes,
+    lf.nome_produto                                                        AS tabela,
+    CAST(lf.qtd_parcelas AS INTEGER)                                       AS prazo,
+    CAST(lf.id_banco AS INTEGER)                                           AS banco
 FROM csd.python.qlik AS lf
 WHERE lf.id_proposta SIMILAR TO '[0-9]+'
     AND lf.id_banco SIMILAR TO '[0-9]+'
     AND lf.qtd_parcelas SIMILAR TO '[0-9]+'
-    AND lf.dat_crc SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    AND SUBSTR(lf.dat_crc, 1, 10) SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
     AND CAST(lf.id_banco AS INTEGER) = 129
     AND CAST(lf.qtd_parcelas AS INTEGER) IN (84, 96, 108)
 
@@ -61,7 +62,7 @@ WHERE p.id_banco = 129
         SELECT 1
         FROM csd.python.qlik AS lf2
         WHERE lf2.id_proposta SIMILAR TO '[0-9]+'
-            AND lf2.dat_crc SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
+            AND SUBSTR(lf2.dat_crc, 1, 10) SIMILAR TO '[0-9]{4}-[0-9]{2}-[0-9]{2}'
             AND CAST(lf2.id_proposta AS INTEGER) = p.id_proposta
-            AND TO_DATE(lf2.dat_crc, 'yyyy-MM-dd') >= DATE '2025-01-01'
+            AND TO_DATE(SUBSTR(lf2.dat_crc, 1, 10), 'yyyy-MM-dd') >= DATE '2025-01-01'
     );
