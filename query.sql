@@ -50,46 +50,19 @@ WHERE EXTRACT(YEAR FROM p.dat_crc) >= 2023
     AND p.propostas_excluir IS NULL;
 
 -- ============================================================
--- View 2: qlik_producao_consolidada
--- Une o histórico (qlik_legado_NOVO) com a produção recente dos
--- últimos 5 meses (dfs.work.qlik_tmp), alinhando as duas fontes
--- pelas 5 colunas em comum: proposta, mes, tabela, banco, prazo.
---
--- Mapeamento de colunas:
---   proposta = id_proposta   (qlik_legado_NOVO) | proposta (qlik_tmp)
---   mes      = dat_crc       (qlik_legado_NOVO) | mes (qlik_tmp)
---   tabela   = nome_produto  (qlik_legado_NOVO) | tabela (qlik_tmp)
---   banco    = id_banco      (qlik_legado_NOVO) | banco (qlik_tmp, vem como nome)
---   prazo    = qtd_parcelas  (qlik_legado_NOVO) | prazo (qlik_tmp)
---
--- Em qlik_tmp o banco vem como nome (texto), então é preciso
--- mapear para o id_banco correspondente do legado (ex.: C6 = 129).
--- Ajuste/complete o CASE abaixo com os demais bancos conforme a
--- lista de bancos usada em qlik_tmp.
---
--- qlik_tmp.mes já é DATE (primeiro dia do mês), então o lado do
--- legado trunca `Data Liberação Crédito` para o primeiro dia do
--- mês, mantendo os dois lados como DATE.
+-- View 2: qlik_legado_c6
+-- Recorte do histórico (qlik_legado_NOVO) somente para o banco
+-- C6 (id_banco = 129), com as colunas renomeadas:
+--   proposta = id_proposta
+--   mes      = dat_crc
+--   tabela   = nome_produto
+--   prazo    = qtd_parcelas
 -- ============================================================
-CREATE OR REPLACE VIEW dfs.work.qlik_producao_consolidada AS
+CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
-    CAST(l.`ID Proposta` AS VARCHAR)           AS proposta,
-    DATE_TRUNC('MONTH', l.`Data Liberação Crédito`) AS mes,
-    l.`Nome Produto`                           AS tabela,
-    l.id_banco                                 AS banco,
-    l.qtd_parcelas                             AS prazo
+    l.`ID Proposta`                 AS proposta,
+    l.`Data Liberação Crédito`      AS mes,
+    l.`Nome Produto`                AS tabela,
+    l.qtd_parcelas                  AS prazo
 FROM dfs.work.qlik_legado_NOVO AS l
-
-UNION ALL
-
-SELECT
-    t.proposta                                 AS proposta,
-    t.mes                                      AS mes,
-    t.tabela                                   AS tabela,
-    CASE
-        WHEN UPPER(t.banco) = 'C6' THEN 129
-        -- TODO: completar mapeamento nome -> id_banco para os demais bancos
-        ELSE NULL
-    END                                         AS banco,
-    t.prazo                                    AS prazo
-FROM dfs.work.qlik_tmp AS t;
+WHERE l.id_banco = 129;
