@@ -8,7 +8,10 @@
 --   proposta = id_proposta
 --   mes      = dat_crc
 --   tabela   = nome_produto
---   prazo    = qtd_parcelas
+--
+-- 'prazo' foi removido: não existe coluna equivalente (qtd_parcelas
+-- ou similar) em dfs.lais.legado_filtro. Se essa informação vier de
+-- outra tabela, precisa de um JOIN adicional para trazê-la.
 --
 -- Mantém os mesmos filtros de validade usados na qlik_legado_NOVO
 -- (propostas a partir de 2023, não excluídas).
@@ -17,8 +20,7 @@ CREATE OR REPLACE VIEW dfs.work.qlik_legado_c6 AS
 SELECT
     p.id_proposta   AS proposta,
     p.dat_crc       AS mes,
-    p.nome_produto  AS tabela,
-    p.qtd_parcelas  AS prazo
+    p.nome_produto  AS tabela
 FROM dfs.lais.legado_filtro AS p
 WHERE p.id_banco = 129
     AND EXTRACT(YEAR FROM p.dat_crc) >= 2023
