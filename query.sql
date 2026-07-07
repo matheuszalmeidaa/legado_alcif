@@ -14,8 +14,7 @@
 --
 -- Observações:
 --   - dfs.lais.legado_filtro não tem coluna de parcelas (qtd_parcelas
---     ou equivalente), então prazo sai NULL no lado histórico, e não
---     dá pra aplicar o filtro de prazo (84/96/108) nesse lado.
+--     ou equivalente), então prazo sai NULL no lado histórico.
 --   - dat_crc é DATE em dfs.lais.legado_filtro e TEXT em
 --     csd.workbank.proposta, no formato 'DD/MM/YYYY HH:MM:SS'
 --     (ex.: '30/06/2026 00:00:00'), por isso o parse com TO_DATE e
@@ -41,7 +40,6 @@ SELECT
     p.id_banco                                                       AS banco
 FROM csd.workbank.proposta AS p
 WHERE p.id_banco = 129
-    AND p.qtd_parcelas IN (84, 96, 108)
     AND NOT EXISTS (
         SELECT 1
         FROM dfs.lais.legado_filtro AS lf2
